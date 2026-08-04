@@ -1,14 +1,25 @@
-FROM python:3.12-slim
+FROM golang:1.22-alpine AS builder
 
-WORKDIR /app
+WORKDIR /src
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY go.mod go.sum ./
+RUN go mod download
 
-COPY app.py .
+COPY *.go ./
 
+# CGO_ENABLED=0 produces a static binary so the final image can be
+# scratch-adjacent alpine with no libc dependency to match; -trimpath and
+# -ldflags="-s -w" drop debug symbols/paths that only matter in dev.
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/go-metrics-app .
+
+FROM alpine:3.19
+
+RUN apk add --no-cache ca-certificates \
+    && addgroup -S app && adduser -S app -G app
+
+COPY --from=builder /out/go-metrics-app /usr/local/bin/go-metrics-app
+
+USER app
 EXPOSE 5000
 
-# Single worker keeps prometheus_client's default (non-multiprocess) registry
-# accurate; the Deployment scales concurrency via replicas instead.
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "app:app"]
+ENTRYPOINT ["/usr/local/bin/go-metrics-app"]
