@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Generates sample traffic against the Flask app so the Grafana dashboard
+# Generates sample traffic against the Go app so the Grafana dashboard
 # and alert rules have real data to show. Requires the cluster to be up.
 set -euo pipefail
 
-APP_NAMESPACE="${APP_NAMESPACE:-flask-app}"
-SERVICE="${SERVICE:-flask-metrics-app}"
+APP_NAMESPACE="${APP_NAMESPACE:-go-metrics-app}"
+SERVICE="${SERVICE:-go-metrics-app}"
 LOCAL_PORT="${LOCAL_PORT:-8080}"
 DURATION="${DURATION:-120}"
 
 kubectl -n "$APP_NAMESPACE" port-forward "svc/$SERVICE" "$LOCAL_PORT:80" \
-  >/tmp/flask-metrics-app-traffic-port-forward.log 2>&1 &
+  >/tmp/go-metrics-app-traffic-port-forward.log 2>&1 &
 PF_PID=$!
 trap 'kill "$PF_PID" 2>/dev/null || true' EXIT
 

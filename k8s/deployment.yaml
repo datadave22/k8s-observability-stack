@@ -1,23 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: flask-metrics-app
-  namespace: flask-app
+  name: go-metrics-app
+  namespace: go-metrics-app
   labels:
-    app: flask-metrics-app
+    app: go-metrics-app
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: flask-metrics-app
+      app: go-metrics-app
   template:
     metadata:
       labels:
-        app: flask-metrics-app
+        app: go-metrics-app
     spec:
+      # Matches the app's own SIGTERM handling (main.go: up to 10s to drain
+      # in-flight requests) plus headroom for the kubelet/endpoint update.
+      terminationGracePeriodSeconds: 15
       containers:
-        - name: flask-metrics-app
-          image: flask-metrics-app:local
+        - name: go-metrics-app
+          image: go-metrics-app:local
           imagePullPolicy: Never
           ports:
             - name: http
@@ -26,18 +29,21 @@ spec:
             httpGet:
               path: /healthz
               port: http
-            initialDelaySeconds: 3
+            initialDelaySeconds: 2
             periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /healthz
               port: http
-            initialDelaySeconds: 5
+            initialDelaySeconds: 3
             periodSeconds: 10
+          # A static Go binary has a far smaller footprint than the CPython
+          # + Flask + gunicorn stack it replaced - halved versus the
+          # previous Python limits.
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: 25m
+              memory: 32Mi
             limits:
-              cpu: 200m
-              memory: 128Mi
+              cpu: 100m
+              memory: 64Mi

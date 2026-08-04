@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: flask-metrics-app
-  namespace: flask-app
+  name: go-metrics-app
+  namespace: go-metrics-app
   labels:
-    app: flask-metrics-app
+    app: go-metrics-app
 spec:
   selector:
-    app: flask-metrics-app
+    app: go-metrics-app
   ports:
     - name: http
       port: 80

@@ -1,8 +1,8 @@
 CLUSTER_NAME          ?= observability-demo
-APP_NAMESPACE         ?= flask-app
+APP_NAMESPACE         ?= go-metrics-app
 MONITORING_NAMESPACE  ?= monitoring
 HELM_RELEASE          ?= kube-prometheus-stack
-IMAGE                 ?= flask-metrics-app:local
+IMAGE                 ?= go-metrics-app:local
 GRAFANA_LOCAL_PORT    ?= 3000
 PROMETHEUS_LOCAL_PORT ?= 9090
 APP_LOCAL_PORT        ?= 8080
@@ -49,14 +49,14 @@ deploy:
 	kubectl apply -f k8s/deployment.yaml
 	kubectl apply -f k8s/service.yaml
 	kubectl apply -f k8s/servicemonitor.yaml
-	kubectl rollout status deployment/flask-metrics-app -n $(APP_NAMESPACE) --timeout=120s
+	kubectl rollout status deployment/go-metrics-app -n $(APP_NAMESPACE) --timeout=120s
 
 dashboard:
-	kubectl create configmap flask-metrics-app-dashboard \
+	kubectl create configmap go-metrics-app-dashboard \
 		--from-file=app-dashboard.json=grafana/dashboards/app-dashboard.json \
 		-n $(MONITORING_NAMESPACE) \
 		--dry-run=client -o yaml | kubectl apply -f -
-	kubectl label configmap flask-metrics-app-dashboard -n $(MONITORING_NAMESPACE) grafana_dashboard=1 --overwrite
+	kubectl label configmap go-metrics-app-dashboard -n $(MONITORING_NAMESPACE) grafana_dashboard=1 --overwrite
 
 alerts:
 	kubectl apply -f prometheus/alerts.yaml
@@ -74,8 +74,8 @@ prometheus-ui:
 	kubectl port-forward -n $(MONITORING_NAMESPACE) svc/prometheus-operated $(PROMETHEUS_LOCAL_PORT):9090
 
 app:
-	@echo "Flask app:  http://localhost:$(APP_LOCAL_PORT)"
-	kubectl port-forward -n $(APP_NAMESPACE) svc/flask-metrics-app $(APP_LOCAL_PORT):80
+	@echo "Go app:     http://localhost:$(APP_LOCAL_PORT)"
+	kubectl port-forward -n $(APP_NAMESPACE) svc/go-metrics-app $(APP_LOCAL_PORT):80
 
 traffic:
 	APP_NAMESPACE=$(APP_NAMESPACE) LOCAL_PORT=$(APP_LOCAL_PORT) DURATION=$(TRAFFIC_DURATION) bash scripts/generate-traffic.sh
@@ -85,7 +85,7 @@ status:
 	kubectl get pods -n $(MONITORING_NAMESPACE) -o wide
 
 logs:
-	kubectl logs -n $(APP_NAMESPACE) -l app=flask-metrics-app -f --tail=100
+	kubectl logs -n $(APP_NAMESPACE) -l app=go-metrics-app -f --tail=100
 
 down:
 	kind delete cluster --name $(CLUSTER_NAME)
