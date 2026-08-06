@@ -198,12 +198,42 @@ threshold to make the failure go away.
 
 ## Screenshots
 
-_TODO: add screenshots after running `make up` + `make traffic`._
+Run these in order; save each into `screenshots/` with the exact filename
+given (already referenced above in this README).
 
-- `screenshots/grafana-dashboard.png` — Grafana dashboard with live traffic
-- `screenshots/prometheus-targets.png` — Prometheus Targets page showing
-  the Go app scrape target as UP
-- `screenshots/prometheus-alerts.png` — Prometheus Alerts page
+1. **Bring the stack up and generate traffic**
+   ```bash
+   make up
+   make traffic   # runs ~120s; open a new terminal for the next steps
+   ```
+
+2. **`screenshots/grafana-dashboard.png`**
+   - In a new terminal: `make grafana`
+   - Open http://localhost:3000, log in `admin` / `admin`
+   - Dashboards → **Go Metrics App - Overview**
+   - Let it sit ~30s so panels have data, then screenshot the full
+     dashboard (all 6 panels visible)
+
+3. **`screenshots/prometheus-targets.png`**
+   - In a new terminal: `make prometheus-ui`
+   - Open http://localhost:9090/targets
+   - Screenshot showing the `go-metrics-app` target(s) as **State: UP**
+
+4. **`screenshots/prometheus-alerts.png`** — more interesting if the alert
+   is actually firing, not just idle:
+   - In a new terminal: `make app`
+   - Trigger it: `for i in {1..50}; do curl -s -o /dev/null localhost:8080/error; done`
+   - Wait ~2 minutes (`GoAppHighErrorRate`'s `for: 2m` duration)
+   - Open http://localhost:9090/alerts, screenshot `GoAppHighErrorRate`
+     in state **Firing** (red)
+
+5. **`screenshots/ci-run.png`** (bonus, but genuinely worth including)
+   - Open https://github.com/datadave22/k8s-observability-stack/actions
+   - Screenshot the run list showing the failed run (the real CVE catch
+     described above) immediately followed by the passing fix - that's
+     evidence of real engineering, not something to hide.
+
+6. Clean up: `make down`
 
 ## Troubleshooting
 
