@@ -1,5 +1,7 @@
 # k8s-observability-stack
 
+[![CI](https://github.com/datadave22/k8s-observability-stack/actions/workflows/ci.yml/badge.svg)](https://github.com/datadave22/k8s-observability-stack/actions/workflows/ci.yml)
+
 A local Kubernetes observability stack: a Go HTTP server that exposes
 Prometheus metrics, scraped automatically via a `ServiceMonitor`, visualized
 in a Grafana dashboard, with custom alert rules watching error rate and
