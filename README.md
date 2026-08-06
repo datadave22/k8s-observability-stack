@@ -21,8 +21,8 @@ code), it's the language the ecosystem you're operating actually speaks.
 Concretely, in this repo that translates to a real, measurable difference,
 not just a preference:
 
-- **Single static binary.** The final container image is ~15MB
-  (`golang:1.22-alpine` builder → `alpine:3.19` runtime, binary only, no
+- **Single static binary.** The final container image is ~16MB
+  (`golang:1.25-alpine` builder → `alpine:3.22` runtime, binary only, no
   interpreter or source in the shipped image) versus a Python image that
   needs the CPython runtime plus installed packages present at runtime.
 - **Lower resource footprint.** The Deployment's resource requests dropped
@@ -165,6 +165,36 @@ k8s-observability-stack/
 ├── scripts/                       # preflight check, traffic generator
 └── screenshots/                   # dashboard screenshots (see below)
 ```
+
+## CI and security scanning
+
+`.github/workflows/ci.yml` runs on every push/PR to `main`:
+
+- **lint** - `helm lint` against the actual `kube-prometheus-stack` chart
+  with `prometheus/values.yaml` applied (catches values typos/schema
+  errors before they'd surface as a broken `helm upgrade`), plus
+  `yamllint` against the Kubernetes manifests
+- **build** - `docker build` of the Go app, confirming it builds cleanly
+- **security** - [Trivy](https://github.com/aquasecurity/trivy-action)
+  image scan, failing on any CRITICAL-severity finding
+
+The first real run of this pipeline caught two genuine issues, not
+hypothetical ones - worth knowing since they're why the Dockerfile reads
+`golang:1.25-alpine` / `alpine:3.22` instead of the `1.22`/`3.19` this repo
+originally shipped with:
+
+1. **CVE-2025-68121** - a CRITICAL `crypto/tls` certificate-validation bug
+   in the Go standard library, present in Go 1.22.x, fixed no later than
+   1.24.13/1.25.7. The `golang:1.22-alpine` builder image was building the
+   binary with a vulnerable stdlib.
+2. Trivy separately flagged `alpine:3.19` as **end-of-life** ("no longer
+   supported by the distribution") - meaning even unrelated future CVEs in
+   Alpine packages would never get patched on that base image, permanently.
+
+Both were fixed by bumping the base images (verified locally: rebuilt,
+re-ran all four endpoints, re-scanned with Trivy directly - 0 findings at
+CRITICAL/HIGH, no EOL warning), not by loosening the scan's severity
+threshold to make the failure go away.
 
 ## Screenshots
 
